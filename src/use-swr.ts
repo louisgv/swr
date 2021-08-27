@@ -327,9 +327,6 @@ export const useSWRHandler = <Data = any, Error = any>(
     const keyChanged = initialMountedRef.current
     const softRevalidate = revalidate.bind(UNDEFINED, WITH_DEDUPE)
 
-    const isActive = () =>
-      configRef.current.isVisible() && configRef.current.isOnline()
-
     // Expose state updater to global event listeners. So we can update hook's
     // internal state from the outside.
     const onStateUpdate: StateUpdateCallback<Data, Error> = (
@@ -357,18 +354,21 @@ export const useSWRHandler = <Data = any, Error = any>(
     // revalidation from the outside.
     let nextFocusRevalidatedAt = 0
     const onRevalidate = (type: RevalidateEvent) => {
+      const now = Date.now()
+      const currentConfig = configRef.current
+      const isActive = currentConfig.isVisible() && currentConfig.isOnline()
+
       if (type === RevalidateEvent.FOCUS_EVENT) {
-        const now = Date.now()
         if (
-          configRef.current.revalidateOnFocus &&
+          currentConfig.revalidateOnFocus &&
           now > nextFocusRevalidatedAt &&
-          isActive()
+          isActive
         ) {
-          nextFocusRevalidatedAt = now + configRef.current.focusThrottleInterval
+          nextFocusRevalidatedAt = now + currentConfig.focusThrottleInterval
           softRevalidate()
         }
       } else if (type === RevalidateEvent.RECONNECT_EVENT) {
-        if (configRef.current.revalidateOnReconnect && isActive()) {
+        if (currentConfig.revalidateOnReconnect && isActive) {
           softRevalidate()
         }
       } else if (type === RevalidateEvent.MUTATE_EVENT) {
